@@ -85,11 +85,11 @@ if __name__ == "__main__":
         inwav = inwav.reshape((len(inwav), 1))
 
     # 最小最大値の取得
-    if inwav.dtype != 'float':
+    if 'float' in str(inwav.dtype):
+        min_val, max_val = -1.0, 1.0
+    else:
         info = np.iinfo(inwav.dtype)
         min_val, max_val = info.min, info.max
-    else:
-        min_val, max_val = -1.0, 1.0
 
     # レート変換
     _, num_channels = inwav.shape
