@@ -72,7 +72,7 @@ if __name__ == "__main__":
     parser.add_argument("input_file", type=str, help="specify input wav file")
     parser.add_argument("output_file", type=str, help="specify output wav file")
     parser.add_argument("output_sampling_rate", type=int, help="specify output sampling rate")
-    parser.add_argument("--filter_order", default=30, help="specify butterworth filter order")
+    parser.add_argument("--filter_order", type=int, default=30, help="specify butterworth filter order")
 
     args = parser.parse_args()
     OUTSR = args.output_sampling_rate
@@ -95,7 +95,7 @@ if __name__ == "__main__":
     _, num_channels = inwav.shape
     outwav = np.array([], dtype=inwav.dtype)
     for ch in range(num_channels):
-        y = _factored_resampling(inwav[:, ch], INSR, OUTSR, int(args.filter_order))
+        y = _factored_resampling(inwav[:, ch], INSR, OUTSR, args.filter_order)
         y = np.clip(y, min_val, max_val).astype(inwav.dtype)
         outwav = np.vstack([outwav, y]) if outwav.size else y
 
