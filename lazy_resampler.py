@@ -11,7 +11,6 @@ def _resampling(data, interp, desim, filter_order):
     """
     interp / desim の比でリサンプリング
     """
-    print(interp, desim)
     # 変換比を元にフィルタ設計
     sos = butter(filter_order, 1.0 / max(interp, desim), output='sos')
     # ゼロ埋め
