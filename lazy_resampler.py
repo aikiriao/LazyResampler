@@ -48,7 +48,7 @@ def _prime_factors(n):
         factors.append(n)
     return factors
 
-def _factored_resampling(data, in_rate, out_rate, filter_order):
+def _factored_resampling(data, in_rate, out_rate, filter_order, antia_order=50):
     """
     レート変換比の素因数分解によるリサンプリング
     """
@@ -57,6 +57,11 @@ def _factored_resampling(data, in_rate, out_rate, filter_order):
     # 素因数分解
     interp_factors = _prime_factors(ratio.numerator)
     desim_factors = _prime_factors(ratio.denominator)
+    antia = butter(antia_order, min(in_rate, out_rate) / max(in_rate, out_rate), output='sos')
+    # 出力レートが入力レートより低いときは、まず
+    # 出力レートのナイキスト周波数以上の成分を削る
+    if out_rate < in_rate:
+        data = _anti_phasedistortion_filtering(antia, data)
     # 素因数によるリサンプリング
     while len(desim_factors) > 0 and len(interp_factors) > 0:
         interp = interp_factors.pop(0)
@@ -71,6 +76,9 @@ def _factored_resampling(data, in_rate, out_rate, filter_order):
     if len(desim_factors) > 0 or len(interp_factors) > 0:
         data = _resampling(data,
                 int(np.prod(interp_factors)), int(np.prod(desim_factors)), filter_order)
+    # 出力側に表れたナイキスト周波数以上の成分を除去
+    if out_rate > in_rate:
+        data = _anti_phasedistortion_filtering(antia, data)
     return data
 
 if __name__ == "__main__":
@@ -78,7 +86,8 @@ if __name__ == "__main__":
     parser.add_argument("input_file", type=str, help="specify input wav file")
     parser.add_argument("output_file", type=str, help="specify output wav file")
     parser.add_argument("output_sampling_rate", type=int, help="specify output sampling rate")
-    parser.add_argument("--filter_order", type=int, default=30, help="specify butterworth filter order")
+    parser.add_argument("--filter_order", type=int,
+            default=50, help="specify butterworth filter order")
 
     args = parser.parse_args()
     OUTSR = args.output_sampling_rate
