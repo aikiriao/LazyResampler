@@ -7,6 +7,14 @@ import numpy as np
 from scipy.signal import butter, sosfilt
 from scipy.io import wavfile
 
+def _anti_phasedistortion_filtering(sos, data):
+    """
+    位相歪みをキャンセルしたフィルタリング
+    """
+    data = sosfilt(sos.copy(), data)
+    # 反転入力で再度フィルタリングすることで位相歪みがキャンセルされる
+    return sosfilt(sos.copy(), data[::-1])[::-1]
+
 def _resampling(data, interp, desim, filter_order):
     """
     interp / desim の比でリサンプリング
@@ -17,9 +25,7 @@ def _resampling(data, interp, desim, filter_order):
     out = np.zeros(interp * len(data))
     out[::interp] = data
     # LPF適用
-    out = sosfilt(sos.copy(), out)
-    # 反転入力で再度フィルタリングすることで位相歪みがキャンセルされる
-    out = sosfilt(sos.copy(), out[::-1])[::-1]
+    out = _anti_phasedistortion_filtering(sos, out)
     # 間引き
     out = out[::desim]
     # ゲイン補償
@@ -80,16 +86,16 @@ if __name__ == "__main__":
     # 入力ファイル取得
     INSR, inwav = wavfile.read(args.input_file)
 
-    # モノラルwavでも後の処理が共通化するように成形
-    if len(inwav.shape) == 1:
-        inwav = inwav.reshape((len(inwav), 1))
-
     # 最小最大値の取得
     if 'float' in str(inwav.dtype):
         min_val, max_val = -1.0, 1.0
     else:
         info = np.iinfo(inwav.dtype)
         min_val, max_val = info.min, info.max
+
+    # モノラルwavでも後の処理が共通化するように成形
+    if len(inwav.shape) == 1:
+        inwav = inwav.reshape((len(inwav), 1))
 
     # レート変換
     _, num_channels = inwav.shape
